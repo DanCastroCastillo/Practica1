@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, HttpCode, Res, ParseBoolPipe, DefaultValuePipe } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthorsService } from './authors.service';
 import { CreateAuthorDto } from './dto/create-author.dto';
 import { UpdateAuthorDto } from './dto/update-author.dto';
@@ -13,22 +14,40 @@ export class AuthorsController {
   }
 
   @Get()
-  findAll() {
-    return this.authorsService.findAll();
+  findAll(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('relations', new DefaultValuePipe(false), ParseBoolPipe) relations: boolean
+  ) {
+    return this.authorsService.findAll(page, limit, relations);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authorsService.findOne(+id);
+  findOne(
+    @Param('id') id: number,
+    @Query('relations', new DefaultValuePipe(false), ParseBoolPipe) relations: boolean
+  ) {
+    return this.authorsService.findOne(id, relations);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthorDto: UpdateAuthorDto) {
-    return this.authorsService.update(+id, updateAuthorDto);
+  update(@Param('id') id: number, @Body() updateAuthorDto: UpdateAuthorDto) {
+    return this.authorsService.update(id, updateAuthorDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authorsService.remove(+id);
+  @HttpCode(204)
+  async remove(
+    @Param('id') id: number,
+    @Query('cascade', new DefaultValuePipe(false), ParseBoolPipe) cascade: boolean,
+    @Res() response: Response
+  ) {
+    await this.authorsService.remove(id, cascade);
+    response.sendStatus(204);
+  }
+
+  @Get(':id/books')
+  findBooks(@Param('id') id: number) {
+    return this.authorsService.findBooks(id);
   }
 }

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, HttpCode, Res, ParseBoolPipe, DefaultValuePipe } from '@nestjs/common';
+import { Response } from 'express';
 import { BooksService } from './books.service';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
@@ -13,22 +14,40 @@ export class BooksController {
   }
 
   @Get()
-  findAll() {
-    return this.booksService.findAll();
+  findAll(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('relations', new DefaultValuePipe(false), ParseBoolPipe) relations: boolean
+  ) {
+    return this.booksService.findAll(page, limit, relations);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.booksService.findOne(+id);
+  findOne(
+    @Param('id') id: number,
+    @Query('relations', new DefaultValuePipe(false), ParseBoolPipe) relations: boolean
+  ) {
+    return this.booksService.findOne(id, relations);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateBookDto: UpdateBookDto) {
-    return this.booksService.update(+id, updateBookDto);
+  update(@Param('id') id: number, @Body() updateBookDto: UpdateBookDto) {
+    return this.booksService.update(id, updateBookDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.booksService.remove(+id);
+  @HttpCode(204)
+  async remove(
+    @Param('id') id: number,
+    @Query('cascade', new DefaultValuePipe(false), ParseBoolPipe) cascade: boolean,
+    @Res() response: Response
+  ) {
+    await this.booksService.remove(id, cascade);
+    response.sendStatus(204);
+  }
+
+  @Get(':id/author')
+  findAuthor(@Param('id') id: number) {
+    return this.booksService.findAuthor(id);
   }
 }
